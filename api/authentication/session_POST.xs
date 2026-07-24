@@ -10,6 +10,7 @@ query session verb=POST {
 
   stack {
     db.add session {
+      enforce_hidden_fields = false
       data = {created_at: "now"}
     } as $session
   }

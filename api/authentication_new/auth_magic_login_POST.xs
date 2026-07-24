@@ -54,6 +54,7 @@ query "auth/magic-login" verb=POST {
     db.edit user {
       field_name = "id"
       field_value = $user.id
+      enforce_hidden_fields = false
       data = {magic_link: $user.magic_link}
     } as $user
   }

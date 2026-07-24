@@ -97,7 +97,6 @@ function "Webflow/Business Listing -> Webflow Payload" {
           "social-youtube-url": item.youtube_url,
           "social-twitter-url": item.twitter_url,
           "social-pinterest-url": item.pinterest_url,
-          "social-tripadvisor-id": item.tripadvisor_id,
           "social-ticket-url": '',
           "social-instagram-url": item.instagram_url,
         

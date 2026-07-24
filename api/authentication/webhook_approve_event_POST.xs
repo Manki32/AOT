@@ -45,6 +45,7 @@ query "webhook/approve_event" verb=POST {
     db.edit event {
       field_name = "id"
       field_value = $payload.xano_id
+      enforce_hidden_fields = false
       data = {
         featured      : $payload.featured
         status        : "Approved"

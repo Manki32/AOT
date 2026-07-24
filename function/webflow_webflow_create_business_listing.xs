@@ -56,6 +56,7 @@ function "Webflow/Webflow -> Create Business Listing" {
     db.edit business_listing {
       field_name = "id"
       field_value = $input.properties.id
+      enforce_hidden_fields = false
       data = {wf_item_id: $api_1.response.result.id}
     } as $business_listing1
   }

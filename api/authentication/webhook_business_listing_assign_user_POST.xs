@@ -29,6 +29,7 @@ query "webhook/business_listing_assign_user" verb=POST {
         db.edit business_listing {
           field_name = "id"
           field_value = $payload.xano_business_listing_id
+          enforce_hidden_fields = false
           data = {
             user_id: $business_listing.user_id|push:$user.id|unique:""
           }
@@ -48,6 +49,7 @@ query "webhook/business_listing_assign_user" verb=POST {
         group {
           stack {
             db.add user {
+              enforce_hidden_fields = false
               data = {
                 created_at     : "now"
                 first_name     : $payload.first_name
@@ -63,6 +65,7 @@ query "webhook/business_listing_assign_user" verb=POST {
             db.edit business_listing {
               field_name = "id"
               field_value = $business_listing.id
+              enforce_hidden_fields = false
               data = {user_id: $business_listing.user_id|push:$new_user.id}
             } as $business_listing1
           

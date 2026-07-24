@@ -234,6 +234,7 @@ function "HubSpot/Hubspot -> Create All Business Listings" {
             db.edit business_listing {
               field_name = "id"
               field_value = $item.id
+              enforce_hidden_fields = false
               data = {hs_id: $hs_result.id}
             } as $business_listing2
           

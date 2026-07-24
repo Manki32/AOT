@@ -10,6 +10,7 @@ query saved_item verb=POST {
 
   stack {
     db.add saved_item {
+      enforce_hidden_fields = false
       data = {created_at: "now"}
     } as $saved_item
   }

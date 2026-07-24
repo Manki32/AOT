@@ -24,6 +24,7 @@ table_trigger sync_to_hs {
     db.edit order {
       field_name = "id"
       field_value = $input.new.id
+      enforce_hidden_fields = false
       data = {synced_to_hubspot: true}
     } as $order2
   }

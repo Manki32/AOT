@@ -24,6 +24,7 @@ query "event/duplicate" verb=POST {
     }
   
     db.add event {
+      enforce_hidden_fields = false
       data = {
         created_at                 : "now"
         name                       : $event.name|concat:" COPY":""

@@ -47,6 +47,7 @@ function "core function/generate_magic_link" {
     db.edit user {
       field_name = "id"
       field_value = $user.id
+      enforce_hidden_fields = false
       data = {magic_link: $magic_link}
     } as $user
   

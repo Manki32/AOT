@@ -46,6 +46,7 @@ function "HubSpot/Hubspot -> Create Missing Contacts" {
             } as $action
           
             db.add user_detail {
+              enforce_hidden_fields = false
               data = {
                 created_at         : "now"
                 address            : ""
@@ -65,6 +66,7 @@ function "HubSpot/Hubspot -> Create Missing Contacts" {
         
           elseif ($hubspot_user.response.status == 200) {
             db.add user_detail {
+              enforce_hidden_fields = false
               data = {
                 created_at         : "now"
                 address            : ""

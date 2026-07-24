@@ -58,6 +58,7 @@ query order verb=POST {
     }
   
     db.add order {
+      enforce_hidden_fields = false
       data = {
         created_at          : "now"
         user_id             : $user_id
@@ -105,6 +106,7 @@ query order verb=POST {
     db.edit order {
       field_name = "id"
       field_value = $order1.id
+      enforce_hidden_fields = false
       data = {
         synced_to_epi_hab: true
         packem_id        : $func1.result|get:"orderNo":null

@@ -29,6 +29,7 @@ query "webhook/event_listing_assign_user" verb=POST {
         db.edit event {
           field_name = "id"
           field_value = $payload.xano_event_listing_id
+          enforce_hidden_fields = false
           data = {user_id: $event.user_id|push:$user.id|unique:""}
           output = ["name", "user_id"]
         } as $event
@@ -47,6 +48,7 @@ query "webhook/event_listing_assign_user" verb=POST {
         group {
           stack {
             db.add user {
+              enforce_hidden_fields = false
               data = {
                 created_at     : "now"
                 first_name     : $payload.first_name
@@ -62,6 +64,7 @@ query "webhook/event_listing_assign_user" verb=POST {
             db.edit event {
               field_name = "id"
               field_value = $payload.xano_event_listing_id
+              enforce_hidden_fields = false
               data = {user_id: $event.user_id|push:$new_user.id}
             } as $event1
           

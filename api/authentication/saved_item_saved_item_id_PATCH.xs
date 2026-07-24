@@ -13,6 +13,7 @@ query "saved_item/{saved_item_id}" verb=PATCH {
     db.edit saved_item {
       field_name = "id"
       field_value = $input.saved_item_id
+      enforce_hidden_fields = false
       data = {}
     } as $saved_item
   }

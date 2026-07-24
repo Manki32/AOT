@@ -13,6 +13,7 @@ query "session/{session_id}" verb=PATCH {
     db.edit session {
       field_name = "id"
       field_value = $input.session_id
+      enforce_hidden_fields = false
       data = {}
     } as $session
   }

@@ -22,6 +22,7 @@ query "auth/signup" verb=POST {
     }
   
     db.add user {
+      enforce_hidden_fields = false
       data = {
         created_at: "now"
         first_name: $input.first_name
@@ -56,6 +57,7 @@ query "auth/signup" verb=POST {
         } as $action
       
         db.add user_detail {
+          enforce_hidden_fields = false
           data = {
             created_at         : "now"
             address            : ""
@@ -93,6 +95,7 @@ query "auth/signup" verb=POST {
         } as $action
       
         db.add user_detail {
+          enforce_hidden_fields = false
           data = {
             created_at         : "now"
             hubspot_record_id  : $action.id

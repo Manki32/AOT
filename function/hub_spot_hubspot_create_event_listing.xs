@@ -30,6 +30,7 @@ function "HubSpot/Hubspot -> Create Event Listing" {
         db.edit event {
           field_name = "id"
           field_value = $input.properties.id
+          enforce_hidden_fields = false
           data = {hs_id: $hs_result.id}
           addon = [
             {

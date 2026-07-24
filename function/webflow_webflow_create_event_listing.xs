@@ -56,6 +56,7 @@ function "Webflow/Webflow -> Create Event Listing" {
     db.edit event {
       field_name = "id"
       field_value = $input.properties.id
+      enforce_hidden_fields = false
       data = {wf_id: $api_1.response.result.id}
     } as $event
   }

@@ -413,6 +413,7 @@ query event verb=POST {
     db.add_or_edit event {
       field_name = "id"
       field_value = $event|get:"id":0
+      enforce_hidden_fields = false
       data = {
         name                     : $input.event_name
         description              : $editor_js_html

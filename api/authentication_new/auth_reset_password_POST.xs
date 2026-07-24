@@ -23,6 +23,7 @@ query "auth/reset-password" verb=POST {
     db.edit user {
       field_name = "id"
       field_value = $auth.id
+      enforce_hidden_fields = false
       data = {password: $input.password}
     } as $user
   

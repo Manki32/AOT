@@ -80,6 +80,7 @@ function "HubSpot/Hubspot -> Create All Event Listings" {
             db.edit event {
               field_name = "id"
               field_value = $item.id
+              enforce_hidden_fields = false
               data = {hs_id: $hs_result.id}
             } as $event2
           

@@ -8,17 +8,24 @@ query business verb=POST {
       table = "business_listing"
       override = {
         slug               : {hidden: true}
+        email              : {hidden: false}
         hs_id              : {hidden: true}
+        title              : {hidden: false}
         status             : {hidden: true}
         tag_id             : {hidden: true}
+        address            : {hidden: false}
         old_ids            : {hidden: true}
         old_url            : {hidden: true}
         summary            : {hidden: true}
         temp_id            : {hidden: true}
         user_id            : {hidden: true}
+        website            : {hidden: false}
         wf_fail            : {hidden: true}
         draft_id           : {hidden: true}
+        latitude           : {hidden: false}
         owner_id           : {hidden: true}
+        amenities          : {hidden: false}
+        longitude          : {hidden: false}
         post_date          : {hidden: true}
         created_at         : {hidden: true}
         hero_image         : {hidden: true}
@@ -29,21 +36,30 @@ query business verb=POST {
         category_id        : {hidden: true}
         more_images        : {hidden: true}
         revision_id        : {hidden: true}
+        twitter_url        : {hidden: false}
+        youtube_url        : {hidden: false}
         body_content       : {hidden: true}
         date_updated       : {hidden: true}
+        facebook_url       : {hidden: false}
         last_edit_by       : {hidden: true}
+        contact_phone      : {hidden: false}
+        instagram_url      : {hidden: false}
         meta_keywords      : {hidden: true}
         missing_email      : {hidden: true}
+        pinterest_url      : {hidden: false}
         s3_meta_image      : {hidden: true}
+        working_hours      : {hidden: false}
         main_photo_url     : {hidden: true}
         push_to_wf_cms     : {hidden: true}
+        tripadvisor_id     : {hidden: false}
         partner_regions    : {hidden: true}
         meta_description   : {hidden: true}
+        provisional_draft  : {hidden: false}
         partner_search_term: {hidden: true}
       }
     }
   
-    int? business_listing_id? {
+    int? business_listing_id?=0 {
       table = "business_listing"
     }
   
@@ -435,6 +451,7 @@ query business verb=POST {
     db.add_or_edit business_listing {
       field_name = "id"
       field_value = $business_listing|get:"id":0
+      enforce_hidden_fields = false
       data = {
         title            : $input.title
         user_id          : $business_listing.user_id

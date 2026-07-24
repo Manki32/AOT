@@ -20,6 +20,7 @@ query "webhook/archive_business_listing" verb=POST {
     db.edit business_listing {
       field_name = "id"
       field_value = $payload.xano_id
+      enforce_hidden_fields = false
       data = {status: "Archived"}
       addon = [
         {

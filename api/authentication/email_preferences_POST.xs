@@ -10,6 +10,7 @@ query email_preferences verb=POST {
 
   stack {
     db.add email_preference {
+      enforce_hidden_fields = false
       data = {created_at: "now"}
     } as $email_preferences
   }

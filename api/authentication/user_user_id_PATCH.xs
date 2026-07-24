@@ -9,7 +9,9 @@ query "user/{user_id}" verb=PATCH {
       table = "user"
       override = {
         role           : {hidden: true}
+        email          : {hidden: false}
         password       : {hidden: true}
+        first_name     : {hidden: false}
         email_confirmed: {hidden: true}
       }
     }

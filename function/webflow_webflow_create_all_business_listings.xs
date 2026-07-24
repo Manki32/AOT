@@ -373,6 +373,7 @@ function "Webflow/Webflow -> Create All Business Listings" {
                 db.edit business_listing {
                   field_name = "id"
                   field_value = $wf_item.fieldData["old-id"]
+                  enforce_hidden_fields = false
                   data = {wf_synced: true}
                 } as $business_listing1
               

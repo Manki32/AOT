@@ -56,6 +56,7 @@ query "user/{user_id}" verb=PUT {
     db.edit user {
       field_name = "id"
       field_value = $input.user_id
+      enforce_hidden_fields = false
       data = {
         first_name     : $user1.first_name
         last_name      : $user1.last_name
