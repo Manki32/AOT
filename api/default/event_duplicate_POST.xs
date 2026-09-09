@@ -18,7 +18,7 @@ query "event/duplicate" verb=POST {
       field_value = $input.id
     } as $event
   
-    precondition (($auth.id|in:$event.user_id) === true || $user1.role === "Admin") {
+    precondition ($user1.role === "Admin") {
       error = "You don't have the permissions to duplicate this record"
       payload = "You don't have the permissions to duplicate this record"
     }
