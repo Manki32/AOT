@@ -43,7 +43,7 @@ function "Webflow/Event Listing -> Webflow Payload" {
         // --- get main image ---
         const main_image_raw =
           event.photos?.find(photo => photo.category === 'main')?.url ||
-          event.main_image?.url;
+          event.main_image_url;
         
         // --- build ImageKit URLs (ENCODED) ---
         const mainImageUrl = main_image_raw
