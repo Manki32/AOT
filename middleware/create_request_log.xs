@@ -8,32 +8,57 @@ middleware create_request_log {
   }
 
   stack {
-    // We only want to log after the request has finished to capture status and output
+    // We log during the POST phase to capture the status and result
     conditional {
       if ($input.type == "post") {
-        // Capture user_id and handle the 0 (unauthenticated) case
+        // Extract context objects from vars
+        var $req_ctx {
+          value = $input.vars|get:"$request":{}
+        }
+      
+        var $res_ctx {
+          value = $input.vars|get:"$response":{}
+        }
+      
+        var $auth_ctx {
+          value = $input.vars|get:"$auth":{}
+        }
+      
+        // Resolve User ID
         var $user_id {
-          value = $input.vars|get:"$auth"|get:"id"
+          value = ($auth_ctx|get:"id") ?? ($input.vars|get:"$auth"|get:"id")
         }
       
-        conditional {
-          if (($user_id == 0) || ($user_id == null)) {
-            var.update $user_id {
-              value = null
-            }
-          }
+        // Resolve Input
+        var $input_data {
+          value = ($req_ctx|get:"params") ?? ($req_ctx|get:"body") ?? ($req_ctx|get:"input")
         }
       
-        // Add the log record to the database
-        db.add logs {
-          data = {
-            endpoint: $input.vars|get:"$request"|get:"uri"
-            method  : $input.vars|get:"$request"|get:"method"
-            status  : $input.vars|get:"$response"|get:"status"
-            input   : $input.vars|get:"$request"|get:"input"
-            output  : $input.vars|get:"$response"|get:"output"
-            user_id : $user_id
-            duration: $input.vars|get:"$response"|get:"duration"
+        // Resolve Output
+        var $output_data {
+          value = ($res_ctx|get:"result") ?? ($res_ctx|get:"output")
+        }
+      
+        // Resolve Duration
+        var $req_duration {
+          value = ($res_ctx|get:"duration") ?? ($input.vars|get:"$response"|get:"duration")
+        }
+      
+        // Resolve Status
+        var $req_status {
+          value = ($res_ctx|get:"status") ?? ($input.vars|get:"$response"|get:"status")
+        }
+      
+        // Use the centralized logging function
+        function.run "core/log_request" {
+          input = {
+            endpoint   : $req_ctx|get:"uri"
+            method     : $req_ctx|get:"method"
+            status     : $req_status|to_int
+            input_data : $input_data
+            output_data: $output_data
+            duration   : $req_duration|to_int
+            user_id    : $user_id|to_int
           }
         }
       }

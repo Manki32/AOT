@@ -23,7 +23,7 @@ table logs {
     json output?
   
     // Reference to the user who made the request, if available.
-    int user_id? {
+    int? user_id? {
       table = "user"
     }
   

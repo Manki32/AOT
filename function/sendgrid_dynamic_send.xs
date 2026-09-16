@@ -15,11 +15,11 @@ function sendgrid_dynamic_send {
   }
 
   stack {
-    precondition ($env.workspace.sendgrid_api_key != "") {
+    precondition (($env.sendgrid_api_key ?? "") != "") {
       error = 'Please set your "sendgrid_api_key" environment variable.'
     }
   
-    precondition ($env.workspace.sendgrid_from_email != "") {
+    precondition (($env.sendgrid_from_email ?? "") != "") {
       error = 'Please set your "sendgrid_from_email" environment variable.'
     }
   
@@ -29,7 +29,7 @@ function sendgrid_dynamic_send {
       method = "POST"
       params = {}
         |set:"from":({}
-          |set:"email":$env.workspace.sendgrid_from_email
+          |set:"email":$env.sendgrid_from_email
           |set:"name":"Visitarizona.com"
         )
         |set:"personalizations":([]
@@ -41,15 +41,25 @@ function sendgrid_dynamic_send {
         |set:"template_id":$input.template_id
       headers = []
         |push:"Content-Type: application/json"
-        |push:("Authorization: Bearer %s"
-          |sprintf:$env.workspace.sendgrid_api_key
-        )
+        |push:("Authorization: Bearer %s"|sprintf:$env.sendgrid_api_key)
       verify_host = false
       verify_peer = false
     } as $api_result
   
+    // Log the outbound request
+    function.run "core/log_request" {
+      input = {
+        endpoint   : "https://api.sendgrid.com/v3/mail/send"
+        method     : "POST"
+        status     : $api_result.response.status|to_int
+        input_data : {template_id: $input.template_id, to: $input.to_email}
+        output_data: $api_result.response.result
+        duration   : $api_result.response.duration|to_int
+      }
+    }
+  
     precondition ($api_result.response.status == 202) {
-      error = $api_result.response.result.errors.0.message
+      error = $api_result.response.result.errors|first|get:"message"
     }
   }
 
