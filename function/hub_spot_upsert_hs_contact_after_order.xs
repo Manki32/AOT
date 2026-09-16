@@ -32,6 +32,17 @@ function "HubSpot/upsert_hs_contact_after_order" {
         
           registry = {hubspot_api_key: $env.hubspot_api}
         } as $action
+      
+        // Log the action call
+        function.run "core/log_request" {
+          input = {
+            endpoint   : "Hubspot -> Create Contact (Action)"
+            method     : "ACTION"
+            status     : 200
+            input_data : {email: $input.email}
+            output_data: $action
+          }
+        }
       }
     
       else {
@@ -55,6 +66,20 @@ function "HubSpot/upsert_hs_contact_after_order" {
         
           registry = {hubspot_api_key: $env.hubspot_api}
         } as $action
+      
+        // Log the action call
+        function.run "core/log_request" {
+          input = {
+            endpoint   : "Hubspot -> Update Contact (Action)"
+            method     : "ACTION"
+            status     : 200
+            input_data : {
+            email     : $input.email
+            contact_id: $hubspot_user.response.result.id
+          }
+            output_data: $action
+          }
+        }
       }
     }
   

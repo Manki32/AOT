@@ -96,6 +96,18 @@ function "HubSpot/Hubspot -> Get Contact by Email" {
           headers = []
             |push:("Authorization: Bearer"|concat:$env.hubspot_api:" ")
         } as $hubspot_api
+      
+        // Log the outbound request
+        function.run "core/log_request" {
+          input = {
+            endpoint   : ("https://api.hubapi.com/crm/v3/objects/contacts/" ~ $input.email)
+            method     : "GET"
+            status     : $hubspot_api.response.status|to_int
+            input_data : {email: $input.email, properties: $input.properties}
+            output_data: $hubspot_api.response.result
+            duration   : $hubspot_api.response.duration|to_int
+          }
+        }
       }
     }
   }

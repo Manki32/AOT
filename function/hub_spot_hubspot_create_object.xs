@@ -26,6 +26,18 @@ function "HubSpot/Hubspot -> Create Object" {
       }
     }
   
+    // Log the outbound request
+    function.run "core/log_request" {
+      input = {
+        endpoint   : ("https://api.hubapi.com/crm/v3/objects/" ~ $input.hubspot_object_type_id)
+        method     : "POST"
+        status     : $hs_api.response.status|to_int
+        input_data : $input.properties
+        output_data: $hs_api.response.result
+        duration   : $hs_api.response.duration|to_int
+      }
+    }
+  
     precondition ($hs_api.response.status == 201 || $hs_api.response.status == 200) {
       error = "Uh oh! Hubspot returned with an error: %s"
         |sprintf:$hs_api.response.result.message

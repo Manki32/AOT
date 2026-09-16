@@ -26,7 +26,7 @@ function "Webflow/Webflow -> Update Event Listing" {
     conditional {
       if ($api_1.response.status === 429) {
         var $retry_after_n {
-          value = $api_1.response.headers.4
+          value = $api_1.response.headers[4]
             |split:": "
             |last
             |to_int
@@ -45,6 +45,18 @@ function "Webflow/Webflow -> Update Event Listing" {
             |push:"Content-Type: application/json"
           timeout = 20
         } as $api_1
+      }
+    }
+  
+    // Log the outbound request
+    function.run "core/log_request" {
+      input = {
+        endpoint   : ("https://api.webflow.com/v2/collections/683a4969614808c01cd0d408/items/" ~ $input.properties.wf_id ~ "/live")
+        method     : "PATCH"
+        status     : $api_1.response.status|to_int
+        input_data : $x1
+        output_data: $api_1.response.result
+        duration   : $api_1.response.duration|to_int
       }
     }
   

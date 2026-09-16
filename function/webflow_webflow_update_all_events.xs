@@ -75,6 +75,7 @@ function "Webflow/Webflow -> Update All Events" {
         } as $items
       
         db.query event {
+          where = $db.event.status == "Approved" && $db.event.wf_id != ""
           return = {
             type  : "list"
             paging: {page: $page, per_page: $input.paging.items}
@@ -145,7 +146,7 @@ function "Webflow/Webflow -> Update All Events" {
         }
       
         api.request {
-          url = 'https://api.webflow.com/v2/collections/683a4969614808c01cd0d408/items/live?skipInvalidFiles=true"'
+          url = 'https://api.webflow.com/v2/collections/683a4969614808c01cd0d408/items?skipInvalidFiles=true"'
           method = "PATCH"
           params = {}|set:"items":$items_to_create
           headers = []
@@ -153,6 +154,18 @@ function "Webflow/Webflow -> Update All Events" {
             |push:"Content-Type: application/json"
           timeout = 60
         } as $api1
+      
+        // Log the outbound batch request
+        function.run "core/log_request" {
+          input = {
+            endpoint   : "Webflow -> Update All Events (Batch)"
+            method     : "PATCH"
+            status     : $api1.response.status|to_int
+            input_data : {count: $items_to_create|count}
+            output_data: $api1.response.result
+            duration   : $api1.response.duration|to_int
+          }
+        }
       
         !conditional {
           if ($api1.response.status == 202) {

@@ -16,6 +16,18 @@ function "Packem/packem_get_inventory_all" {
         |push:"authorization:Bearer " ~ $var.func1
     } as $api1
   
+    // Log the outbound request
+    function.run "core/log_request" {
+      input = {
+        endpoint   : "https://external.packem-wms.com/api/Inventory/all"
+        method     : "GET"
+        status     : $api1.response.status|to_int
+        input_data : $api1.request.params
+        output_data: $api1.response.result
+        duration   : $api1.response.duration|to_int
+      }
+    }
+  
     precondition ($api1.response.status == 200) {
       error_type = "accessdenied"
       error = "Access Denied"

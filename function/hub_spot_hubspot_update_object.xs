@@ -27,6 +27,18 @@ function "HubSpot/Hubspot -> Update Object" {
             |push:("authorization: Bearer %s"|sprintf:$env.hubspot_api)
             |push:"content-type: application/json"
         } as $hs_api
+      
+        // Log the outbound request
+        function.run "core/log_request" {
+          input = {
+            endpoint   : ("https://api.hubapi.com/crm/v3/objects/" ~ $input.object_type ~ "/" ~ $input.object_id)
+            method     : "PATCH"
+            status     : $hs_api.response.status|to_int
+            input_data : $input.properties
+            output_data: $hs_api.response.result
+            duration   : $hs_api.response.duration|to_int
+          }
+        }
       }
     }
   

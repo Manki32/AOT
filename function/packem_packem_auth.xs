@@ -26,6 +26,18 @@ function "Packem/packem_auth" {
                 |push:"content-type: application/*+json"
             } as $api1
           
+            // Log the outbound request
+            function.run "core/log_request" {
+              input = {
+                endpoint   : "https://external.packem-wms.com/api/Auth/generateAccessToken"
+                method     : "POST"
+                status     : $api1.response.status|to_int
+                input_data : {apiKey: "MASKED"}
+                output_data: $api1.response.result
+                duration   : $api1.response.duration|to_int
+              }
+            }
+          
             precondition ($api1.response.status == 200) {
               error_type = "accessdenied"
               error = "Access Denied"

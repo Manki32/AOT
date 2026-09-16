@@ -46,6 +46,18 @@ function "Packem/packem_create_order" {
         |push:"content-type: application/*+json"
         |push:"authorization: Bearer " ~ $var.func1
     } as $api1
+  
+    // Log the outbound request
+    function.run "core/log_request" {
+      input = {
+        endpoint   : "https://external.packem-wms.com/api/Order/create"
+        method     : "POST"
+        status     : $api1.response.status|to_int
+        input_data : $api1.request.params
+        output_data: $api1.response.result
+        duration   : $api1.response.duration|to_int
+      }
+    }
   }
 
   response = $api1.response

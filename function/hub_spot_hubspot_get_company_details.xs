@@ -19,6 +19,18 @@ function "HubSpot/Hubspot -> Get Company Details" {
           headers = []
             |push:("Authorization: Bearer"|concat:$env.hubspot_api:" ")
         } as $hubspot_api
+      
+        // Log the outbound request
+        function.run "core/log_request" {
+          input = {
+            endpoint   : ("https://api.hubapi.com/crm/v3/objects/company/" ~ $input.id)
+            method     : "GET"
+            status     : $hubspot_api.response.status|to_int
+            input_data : {id: $input.id, properties: $input.properties}
+            output_data: $hubspot_api.response.result
+            duration   : $hubspot_api.response.duration|to_int
+          }
+        }
       }
     }
   }
