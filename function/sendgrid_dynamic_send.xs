@@ -52,9 +52,10 @@ function sendgrid_dynamic_send {
         endpoint   : "https://api.sendgrid.com/v3/mail/send"
         method     : "POST"
         status     : $api_result.response.status|to_int
-        input_data : {template_id: $input.template_id, to: $input.to_email}
+        input_data : "{}"
         output_data: $api_result.response.result
-        duration   : $api_result.response.duration|to_int
+        duration   : 0
+        user_id    : 0
       }
     }
   
