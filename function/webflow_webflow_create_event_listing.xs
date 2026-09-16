@@ -56,7 +56,6 @@ function "Webflow/Webflow -> Create Event Listing" {
         status     : $api_1.response.status|to_int
         input_data : $x1
         output_data: $api_1.response.result
-        duration   : $api_1.response.duration|to_int
       }
     }
   

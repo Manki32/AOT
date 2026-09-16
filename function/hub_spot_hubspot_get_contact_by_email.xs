@@ -105,7 +105,6 @@ function "HubSpot/Hubspot -> Get Contact by Email" {
             status     : $hubspot_api.response.status|to_int
             input_data : {email: $input.email, properties: $input.properties}
             output_data: $hubspot_api.response.result
-            duration   : $hubspot_api.response.duration|to_int
           }
         }
       }

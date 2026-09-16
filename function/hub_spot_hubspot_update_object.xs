@@ -36,7 +36,6 @@ function "HubSpot/Hubspot -> Update Object" {
             status     : $hs_api.response.status|to_int
             input_data : $input.properties
             output_data: $hs_api.response.result
-            duration   : $hs_api.response.duration|to_int
           }
         }
       }

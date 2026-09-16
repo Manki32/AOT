@@ -28,7 +28,6 @@ function "HubSpot/Hubspot -> Get Company Details" {
             status     : $hubspot_api.response.status|to_int
             input_data : {id: $input.id, properties: $input.properties}
             output_data: $hubspot_api.response.result
-            duration   : $hubspot_api.response.duration|to_int
           }
         }
       }

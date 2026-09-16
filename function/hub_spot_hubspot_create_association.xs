@@ -31,7 +31,6 @@ function "HubSpot/Hubspot -> Create Association" {
         to_object_id    : $input.to_object_id
       }
         output_data: $hs_api.response.result
-        duration   : $hs_api.response.duration|to_int
       }
     }
   

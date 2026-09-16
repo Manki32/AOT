@@ -6,7 +6,6 @@ function "core/log_request" {
     int status
     json input_data?
     json output_data?
-    int duration?
     int user_id?
   }
 
@@ -34,7 +33,6 @@ function "core/log_request" {
         input   : $input.input_data
         output  : $input.output_data
         user_id : $resolved_user_id
-        duration: $input.duration
       }
     } as $new_log
   }

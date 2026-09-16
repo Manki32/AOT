@@ -12,6 +12,17 @@ table_trigger update_event_listing {
   }
 
   stack {
+    // Log the trigger activation
+    function.run "core/log_request" {
+      input = {
+        endpoint   : "Trigger: update_event_listing"
+        method     : "TRIGGER"
+        status     : 200
+        input_data : {old: $input.old, new: $input.new}
+        output_data: {message: "Trigger started"}
+      }
+    }
+  
     db.get event {
       field_name = "id"
       field_value = $input.new.id

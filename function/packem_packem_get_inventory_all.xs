@@ -24,7 +24,6 @@ function "Packem/packem_get_inventory_all" {
         status     : $api1.response.status|to_int
         input_data : $api1.request.params
         output_data: $api1.response.result
-        duration   : $api1.response.duration|to_int
       }
     }
   

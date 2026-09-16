@@ -39,11 +39,6 @@ middleware create_request_log {
           value = ($res_ctx|get:"result") ?? ($res_ctx|get:"output")
         }
       
-        // Resolve Duration
-        var $req_duration {
-          value = ($res_ctx|get:"duration") ?? ($input.vars|get:"$response"|get:"duration")
-        }
-      
         // Resolve Status
         var $req_status {
           value = ($res_ctx|get:"status") ?? ($input.vars|get:"$response"|get:"status")
@@ -57,7 +52,6 @@ middleware create_request_log {
             status     : $req_status|to_int
             input_data : $input_data
             output_data: $output_data
-            duration   : $req_duration|to_int
             user_id    : $user_id|to_int
           }
         }

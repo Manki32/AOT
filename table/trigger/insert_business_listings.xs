@@ -12,6 +12,17 @@ table_trigger insert_business_listings {
   }
 
   stack {
+    // Log the trigger activation
+    function.run "core/log_request" {
+      input = {
+        endpoint   : "Trigger: insert_business_listings"
+        method     : "TRIGGER"
+        status     : 200
+        input_data : $input.new
+        output_data: {message: "Trigger started"}
+      }
+    }
+  
     db.get business_listing {
       field_name = "id"
       field_value = $input.new.id

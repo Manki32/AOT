@@ -163,7 +163,6 @@ function "Webflow/Webflow -> Update All Events" {
             status     : $api1.response.status|to_int
             input_data : {count: $items_to_create|count}
             output_data: $api1.response.result
-            duration   : $api1.response.duration|to_int
           }
         }
       

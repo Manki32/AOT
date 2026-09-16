@@ -58,7 +58,6 @@ function "Webflow/Webflow -> Delete Event Listing" {
         status     : $api_1.response.status|to_int
         input_data : {id: $input.properties.wf_id}
         output_data: $api_1.response.result
-        duration   : $api_1.response.duration|to_int
       }
     }
   

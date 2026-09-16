@@ -12,6 +12,17 @@ table_trigger sync_to_hs {
   }
 
   stack {
+    // Log the trigger activation
+    function.run "core/log_request" {
+      input = {
+        endpoint   : "Trigger: sync_to_hs"
+        method     : "TRIGGER"
+        status     : 200
+        input_data : $input.new
+        output_data: {message: "Trigger started"}
+      }
+    }
+  
     function.run "HubSpot/upsert_hs_contact_after_order" {
       input = {
         email               : $input.new.email

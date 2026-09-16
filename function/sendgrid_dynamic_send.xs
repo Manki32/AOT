@@ -19,7 +19,7 @@ function sendgrid_dynamic_send {
       error = 'Please set your "sendgrid_api_key" environment variable.'
     }
   
-    precondition (`($env.sendgrid_from_email ?? ""` != "") {
+    precondition (($env.sendgrid_from_email ?? "") != "") {
       error = 'Please set your "sendgrid_from_email" environment variable.'
     }
   
@@ -54,7 +54,6 @@ function sendgrid_dynamic_send {
         status     : $api_result.response.status|to_int
         input_data : "{}"
         output_data: $api_result.response.result
-        duration   : 0
         user_id    : 0
       }
     }

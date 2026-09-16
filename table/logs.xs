@@ -26,9 +26,6 @@ table logs {
     int? user_id? {
       table = "user"
     }
-  
-    // The duration of the endpoint call in milliseconds.
-    int duration?
   }
 
   index = [
