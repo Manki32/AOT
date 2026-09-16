@@ -3,7 +3,7 @@ branch v1 {
   color = "#fff3cd"
   middleware = {
     function: {pre: [], post: []}
-    query   : {pre: [], post: []}
+    query   : {pre: [], post: [{name: "create_request_log"}]}
     task    : {pre: [], post: []}
     tool    : {pre: [], post: []}
   }
