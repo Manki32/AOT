@@ -19,7 +19,7 @@ function sendgrid_dynamic_send {
       error = 'Please set your "sendgrid_api_key" environment variable.'
     }
   
-    precondition (($env.sendgrid_from_email ?? "") != "") {
+    precondition (($env.workspace.sendgrid_from_email ?? "") != "") {
       error = 'Please set your "sendgrid_from_email" environment variable.'
     }
   
