@@ -38,7 +38,7 @@ query business verb=POST {
         revision_id        : {hidden: true}
         twitter_url        : {hidden: false}
         youtube_url        : {hidden: false}
-        body_content       : {hidden: true}
+        body_content       : {hidden: true, required: true}
         date_updated       : {hidden: true}
         facebook_url       : {hidden: false}
         last_edit_by       : {hidden: true}

@@ -20,7 +20,7 @@ query order verb=POST {
         text sku? filters=trim
         text quantity? filters=trim
         text unitOfMeasure? filters=trim
-        text eachesPercase? filters=trim
+        text eachesPercase?="0" filters=trim
       }
     }
   

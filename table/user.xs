@@ -16,7 +16,7 @@ table user {
   
     bool email_confirmed?
     enum role?=User {
-      values = ["User", "Admin"]
+      values = ["User", "Admin", "EventManager"]
     }
   
     bool deleted?
