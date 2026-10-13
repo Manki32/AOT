@@ -1,4 +1,5 @@
-// Set status to approved after receiving webhook from hubspot
+// Archive an event listing after receiving a webhook from HubSpot, then
+// delete it from Webflow. Fires an admin alert on Webflow delete failure.
 query "webhook/archive_event" verb=POST {
   api_group = "Authentication"
 
@@ -72,9 +73,29 @@ query "webhook/archive_event" verb=POST {
   
     conditional {
       if ($event1.wf_id != "") {
-        function.run "Webflow/Webflow -> Delete Event Listing" {
-          input = {properties: $event1}
-        } as $func1
+        try_catch {
+          try {
+            function.run "Webflow/Webflow -> Delete Event Listing" {
+              input = {properties: $event1}
+            } as $func1
+          }
+        
+          catch {
+            function.run "alerts/send_integration_failure_alert" {
+              input = {
+                category       : "events"
+                integration    : "Webflow"
+                event_type     : "Event Listing Delete Failed"
+                what_went_wrong: "An archived event listing failed to delete from Webflow. The event is archived in Xano but may still be visible on the website until this is resolved."
+                source         : "Xano"
+                destination    : "Webflow"
+                listing_name   : $event1.name
+                listing_id     : $event1.id
+                raw_error      : "See logs for the Webflow response. The delete function raised and this catch handler fired."
+              }
+            }
+          }
+        }
       }
     }
   

@@ -1,3 +1,5 @@
+// On insert: sync the new business listing to HubSpot. Alerts admins only
+// when the listing is already in "Requesting Approval" state (drafts stay silent).
 table_trigger insert_business_listings {
   table = "business_listing"
 
@@ -70,9 +72,35 @@ table_trigger insert_business_listings {
       ]
     } as $business_listing
   
-    function.run "HubSpot/Hubspot -> Create Business Listing" {
-      input = {properties: $business_listing}
-    } as $func1
+    // Only alert on real sync failures. Drafts (not yet "Requesting Approval")
+    // commonly fail HubSpot sync due to missing data — that is expected.
+    try_catch {
+      try {
+        function.run "HubSpot/Hubspot -> Create Business Listing" {
+          input = {properties: $business_listing}
+        } as $func1
+      }
+    
+      catch {
+        conditional {
+          if ($input.new.status == "Requesting Approval") {
+            function.run "alerts/send_integration_failure_alert" {
+              input = {
+                category       : "business"
+                integration    : "HubSpot"
+                event_type     : "Business Listing Sync Failed"
+                what_went_wrong: "A new business listing was submitted for approval but failed to sync to HubSpot. The listing exists in Xano but is not yet in HubSpot."
+                source         : "Xano"
+                destination    : "HubSpot"
+                listing_name   : $business_listing.title
+                listing_id     : $business_listing.id
+                raw_error      : "See logs for the HubSpot response. The sync function raised and this catch handler fired."
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   actions = {insert: true}

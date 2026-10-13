@@ -1,4 +1,5 @@
-// Set status to approved after receiving webhook from hubspot
+// Set status to approved after receiving a webhook from HubSpot, then push
+// the newly-approved event to Webflow. Fires an admin alert on Webflow failure.
 query "webhook/approve_event" verb=POST {
   api_group = "Authentication"
 
@@ -114,17 +115,37 @@ query "webhook/approve_event" verb=POST {
       ]
     } as $event1
   
-    conditional {
-      if ($event1.wf_id != "") {
-        function.run "Webflow/Webflow -> Update Event Listing" {
-          input = {properties: $event1}
-        } as $func2
+    try_catch {
+      try {
+        conditional {
+          if ($event1.wf_id != "") {
+            function.run "Webflow/Webflow -> Update Event Listing" {
+              input = {properties: $event1}
+            } as $func2
+          }
+        
+          else {
+            function.run "Webflow/Webflow -> Create Event Listing" {
+              input = {properties: $event1}
+            } as $func1
+          }
+        }
       }
     
-      else {
-        function.run "Webflow/Webflow -> Create Event Listing" {
-          input = {properties: $event1}
-        } as $func1
+      catch {
+        function.run "alerts/send_integration_failure_alert" {
+          input = {
+            category       : "events"
+            integration    : "Webflow"
+            event_type     : "Event Listing Publish Failed"
+            what_went_wrong: "An approved event listing failed to publish to Webflow. The event is approved in Xano but will not appear on the website until this is resolved."
+            source         : "Xano"
+            destination    : "Webflow"
+            listing_name   : $event1.name
+            listing_id     : $event1.id
+            raw_error      : "See logs for the Webflow response. The sync function raised and this catch handler fired."
+          }
+        }
       }
     }
   }

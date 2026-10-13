@@ -82,9 +82,29 @@ table_trigger update_business_listing {
       ]
     } as $business_listing
   
-    function.run "HubSpot/Hubspot -> Update Business Listing" {
-      input = {properties: $business_listing}
-    } as $hubspotSync
+    try_catch {
+      try {
+        function.run "HubSpot/Hubspot -> Update Business Listing" {
+          input = {properties: $business_listing}
+        } as $hubspotSync
+      }
+    
+      catch {
+        function.run "alerts/send_integration_failure_alert" {
+          input = {
+            category       : "business"
+            integration    : "HubSpot"
+            event_type     : "Business Listing Sync Failed"
+            what_went_wrong: "A business listing was marked Requesting Approval but failed to sync to HubSpot. Changes are saved in Xano but have not reached HubSpot."
+            source         : "Xano"
+            destination    : "HubSpot"
+            listing_name   : $business_listing.title
+            listing_id     : $business_listing.id
+            raw_error      : "See logs for the HubSpot response. The sync function raised and this catch handler fired."
+          }
+        }
+      }
+    }
   
     function.run sendgrid_dynamic_send {
       input = {

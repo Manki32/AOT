@@ -1,4 +1,5 @@
-// Set status to approved after receiving webhook from hubspot
+// Set status to approved after receiving a webhook from HubSpot, then push
+// the newly-approved listing to Webflow. Fires an admin alert on Webflow failure.
 query "webhook/approve_business_listing" verb=POST {
   api_group = "Authentication"
 
@@ -90,17 +91,37 @@ query "webhook/approve_business_listing" verb=POST {
       ]
     } as $business_listing
   
-    conditional {
-      if ($business_listing.wf_item_id != "") {
-        function.run "Webflow/Webflow -> Update Business Listing" {
-          input = {properties: $business_listing}
-        } as $func2
+    try_catch {
+      try {
+        conditional {
+          if ($business_listing.wf_item_id != "") {
+            function.run "Webflow/Webflow -> Update Business Listing" {
+              input = {properties: $business_listing}
+            } as $func2
+          }
+        
+          else {
+            function.run "Webflow/Webflow -> Create Business Listing" {
+              input = {properties: $business_listing}
+            } as $func1
+          }
+        }
       }
     
-      else {
-        function.run "Webflow/Webflow -> Create Business Listing" {
-          input = {properties: $business_listing}
-        } as $func1
+      catch {
+        function.run "alerts/send_integration_failure_alert" {
+          input = {
+            category       : "business"
+            integration    : "Webflow"
+            event_type     : "Business Listing Publish Failed"
+            what_went_wrong: "An approved business listing failed to publish to Webflow. The listing is approved in Xano but will not appear on the website until this is resolved."
+            source         : "Xano"
+            destination    : "Webflow"
+            listing_name   : $business_listing.title
+            listing_id     : $business_listing.id
+            raw_error      : "See logs for the Webflow response. The sync function raised and this catch handler fired."
+          }
+        }
       }
     }
   }

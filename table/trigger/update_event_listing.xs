@@ -86,9 +86,29 @@ table_trigger update_event_listing {
       ]
     } as $listing
   
-    function.run "HubSpot/Hubspot -> Update Event Listing" {
-      input = {properties: $listing}
-    } as $func2
+    try_catch {
+      try {
+        function.run "HubSpot/Hubspot -> Update Event Listing" {
+          input = {properties: $listing}
+        } as $func2
+      }
+    
+      catch {
+        function.run "alerts/send_integration_failure_alert" {
+          input = {
+            category       : "events"
+            integration    : "HubSpot"
+            event_type     : "Event Listing Sync Failed"
+            what_went_wrong: "An event listing was marked Requesting approval but failed to sync to HubSpot. Changes are saved in Xano but have not reached HubSpot."
+            source         : "Xano"
+            destination    : "HubSpot"
+            listing_name   : $listing.name
+            listing_id     : $listing.id
+            raw_error      : "See logs for the HubSpot response. The sync function raised and this catch handler fired."
+          }
+        }
+      }
+    }
   
     function.run sendgrid_dynamic_send {
       input = {

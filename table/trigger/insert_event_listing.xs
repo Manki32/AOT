@@ -1,3 +1,5 @@
+// On insert: sync the new event listing to HubSpot. Alerts admins only
+// when the listing is already in "Requesting approval" state (drafts stay silent).
 table_trigger insert_event_listing {
   table = "event"
 
@@ -75,9 +77,35 @@ table_trigger insert_event_listing {
       ]
     } as $listing
   
-    function.run "HubSpot/Hubspot -> Create Event Listing" {
-      input = {properties: $listing}
-    } as $func1
+    // Only alert on real sync failures. Drafts (not yet "Requesting approval")
+    // commonly fail HubSpot sync due to missing data — that is expected.
+    try_catch {
+      try {
+        function.run "HubSpot/Hubspot -> Create Event Listing" {
+          input = {properties: $listing}
+        } as $func1
+      }
+    
+      catch {
+        conditional {
+          if ($input.new.status == "Requesting approval") {
+            function.run "alerts/send_integration_failure_alert" {
+              input = {
+                category       : "events"
+                integration    : "HubSpot"
+                event_type     : "Event Listing Sync Failed"
+                what_went_wrong: "A new event listing was submitted for approval but failed to sync to HubSpot. The listing exists in Xano but is not yet in HubSpot."
+                source         : "Xano"
+                destination    : "HubSpot"
+                listing_name   : $listing.name
+                listing_id     : $listing.id
+                raw_error      : "See logs for the HubSpot response. The sync function raised and this catch handler fired."
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   actions = {insert: true}

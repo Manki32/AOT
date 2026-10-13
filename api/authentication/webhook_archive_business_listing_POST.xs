@@ -1,4 +1,5 @@
-// Set status to approved after receiving webhook from hubspot
+// Archive a business listing after receiving a webhook from HubSpot, then
+// delete it from Webflow. Fires an admin alert on Webflow delete failure.
 query "webhook/archive_business_listing" verb=POST {
   api_group = "Authentication"
 
@@ -66,9 +67,29 @@ query "webhook/archive_business_listing" verb=POST {
   
     conditional {
       if ($business_listing.wf_item_id != "") {
-        function.run "Webflow/Webflow -> Delete Business Listing" {
-          input = {properties: $business_listing}
-        } as $func1
+        try_catch {
+          try {
+            function.run "Webflow/Webflow -> Delete Business Listing" {
+              input = {properties: $business_listing}
+            } as $func1
+          }
+        
+          catch {
+            function.run "alerts/send_integration_failure_alert" {
+              input = {
+                category       : "business"
+                integration    : "Webflow"
+                event_type     : "Business Listing Delete Failed"
+                what_went_wrong: "An archived business listing failed to delete from Webflow. The listing is archived in Xano but may still be visible on the website until this is resolved."
+                source         : "Xano"
+                destination    : "Webflow"
+                listing_name   : $business_listing.title
+                listing_id     : $business_listing.id
+                raw_error      : "See logs for the Webflow response. The delete function raised and this catch handler fired."
+              }
+            }
+          }
+        }
       }
     }
   }

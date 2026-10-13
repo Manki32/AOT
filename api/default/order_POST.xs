@@ -1,3 +1,5 @@
+// Create a customer order, sync it to Packem for fulfillment, and alert
+// admins (silently to the customer) if the Packem sync fails.
 query order verb=POST {
   api_group = "Default"
 
@@ -96,6 +98,28 @@ query order verb=POST {
         items           : $input.items|json_encode
       }
     } as $func1
+  
+    // Alert admins on Packem failure — the customer order is saved in Xano
+    // but the warehouse never received it. Customer-facing error below is unchanged.
+    conditional {
+      if ($func1.status != 200) {
+        function.run "alerts/send_integration_failure_alert" {
+          input = {
+            category       : "packem"
+            integration    : "Packem"
+            event_type     : "Order Sync to Warehouse Failed"
+            what_went_wrong: "A customer order was saved in Xano but failed to sync to Packem. The warehouse has not received this order and it will not ship until this is resolved."
+            source         : "Xano"
+            destination    : "Packem"
+            listing_name   : ($input.first_name ~ " " ~ $input.last_name)
+            listing_id     : $order1.id
+            endpoint       : "https://external.packem-wms.com/api/Order/create"
+            status_code    : $func1.status|to_int
+            raw_error      : $func1|json_encode
+          }
+        }
+      }
+    }
   
     precondition ($func1.status == 200) {
       error_type = "inputerror"
