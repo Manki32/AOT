@@ -17,6 +17,16 @@ table business_listing {
     // A URL-friendly slug for the listing.
     text slug? filters=trim
   
+    enum status? {
+      values = [
+        "Approved"
+        "Rejected"
+        "Draft"
+        "Requesting Approval"
+        "Archived"
+      ]
+    }
+  
     int owner_id? {
       table = "user"
     }
@@ -82,15 +92,6 @@ table business_listing {
     text address_string? filters=trim
     text latitude? filters=trim
     text longitude? filters=trim
-    enum status? {
-      values = [
-        "Approved"
-        "Rejected"
-        "Draft"
-        "Requesting Approval"
-        "Archived"
-      ]
-    }
   
     // URL for the business's Facebook page
     text facebook_url? filters=trim
