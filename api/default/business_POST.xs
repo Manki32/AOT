@@ -8,7 +8,7 @@ query business verb=POST {
       table = "business_listing"
       override = {
         slug               : {hidden: true}
-        email              : {hidden: false}
+        email              : {hidden: true}
         hs_id              : {hidden: true}
         title              : {hidden: false}
         status             : {hidden: true}
@@ -58,6 +58,10 @@ query business verb=POST {
         partner_search_term: {hidden: true}
       }
     }
+  
+    // Declared as plain text (not the table's `email` type) so an unfinished
+    // address can still be saved on a draft. Format is validated below on submit.
+    text email? filters=trim|lower
   
     int? business_listing_id?=0 {
       table = "business_listing"
@@ -111,13 +115,19 @@ query business verb=POST {
           error = "You can't edit a business that was already approved."
         }
       
-        db.query business_listing {
-          where = $db.business_listing.id != $input.business_listing_id && $db.business_listing.title == $input.title
-          return = {type: "list"}
-        } as $business_listing_title_repited
-      
-        precondition ($business_listing_title_repited|is_empty) {
-          error = "A business listing with that name already exists."
+        // Duplicate title check (skipped for untitled drafts; archived listings don't count)
+        conditional {
+          if (($input.title|is_empty) == false) {
+            db.query business_listing {
+              where = $db.business_listing.id != $input.business_listing_id && $db.business_listing.title == $input.title && $db.business_listing.status != "Archived"
+              return = {type: "list"}
+            } as $business_listing_title_repited
+          
+            precondition ($business_listing_title_repited|is_empty) {
+              error_type = "inputerror"
+              error = '{"message":"A business listing with that name already exists.","fields":{"title":"A business listing with that name already exists. Choose a different name."}}'
+            }
+          }
         }
       }
     
@@ -130,87 +140,147 @@ query business verb=POST {
           value = []|push:$auth.id|unique:""
         }
       
-        db.query business_listing {
-          where = $db.business_listing.title == $input.title
-          return = {type: "list"}
-        } as $business_listing_title_repited
-      
-        precondition ($business_listing_title_repited|is_empty) {
-          error = "A business listing with that name already exists."
+        // Duplicate title check (skipped for untitled drafts; archived listings don't count)
+        conditional {
+          if (($input.title|is_empty) == false) {
+            db.query business_listing {
+              where = $db.business_listing.title == $input.title && $db.business_listing.status != "Archived"
+              return = {type: "list"}
+            } as $business_listing_title_repited
+          
+            precondition ($business_listing_title_repited|is_empty) {
+              error_type = "inputerror"
+              error = '{"message":"A business listing with that name already exists.","fields":{"title":"A business listing with that name already exists. Choose a different name."}}'
+            }
+          }
         }
       }
     }
   
+    // Field-level validation. Drafts are never validated here (they always save).
+    // On submit, returns null when everything is valid, otherwise a JSON string:
+    //   {"message": "...", "fields": {"<input name>": "<message>", ...}}
+    // The front end parses `fields` and highlights each input. Keep the rules in
+    // sync with the Wized function `businessForm_module`.
     api.lambda {
       code = """
-        const data = {
-          email: $input.email,
-          title: $input.title,
-          website: $input.website,
-          latitude: $input.latitude,
-          longitude: $input.longitude,
-          address_string: $input.address_string,
-          main_image: $input.main_image,
-          main_image_url: $input.main_image_url,
-          contact_phone: $input.contact_phone,
-          editor_js_json: $input.editor_js_json,
-          provisional_draft: $input.provisional_draft
-        };
+        const isDraft = $input.provisional_draft === true;
+        if (isDraft) return null;
         
-        // Si el main_image_url contiene "blob:", se vuelve null
-        if (typeof data.main_image_url === "string" && data.main_image_url.includes("blob:")) {
-          data.main_image_url = null;
-        }
+        const str = (v) => (v === null || v === undefined) ? "" : String(v).trim();
+        const fields = {};
         
-        // Si es borrador, siempre es válido
-        if (data.provisional_draft === true) {
-          return true;
-        } else {
-          const hasEmail = !!data.email?.trim();
-          const hasTitle = !!data.title?.trim();
-          const hasLatitude = !!data.latitude;
-          const hasLongitude = !!data.longitude;
-          const hasWebsite = !!data.website?.trim();
+        const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        const phoneRegex = /^(\+1\s?)?(\(?[2-9][0-9]{2}\)?)[\s.-]?([2-9][0-9]{2})[\s.-]?([0-9]{4})$/;
         
-          const hasAddress = !!data.address_string?.trim();
-          const hasMainImage = !!(data.main_image || data.main_image_url);
-        
-          const hasPhone = !!data.contact_phone?.trim();
-        
-          let editorHasBlocks = false;
+        // http(s) URL with a real hostname, or null
+        function parseHttpUrl(value) {
           try {
-            let editor = {};
-            if (typeof data.editor_js_json === "string") {
-              editor = JSON.parse(data.editor_js_json);
-            } else if (typeof data.editor_js_json === "object" && data.editor_js_json !== null) {
-              editor = data.editor_js_json;
-            }
-            editorHasBlocks = Array.isArray(editor.blocks) && editor.blocks.length > 0;
+            const u = new URL(value);
+            if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+            if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(u.hostname)) return null;
+            return u;
           } catch (e) {
-            editorHasBlocks = false;
+            return null;
           }
-        
-          return (
-            hasEmail &&
-            hasTitle &&
-            hasLatitude &&
-            hasLongitude &&
-            hasWebsite &&
-            hasAddress &&
-            hasMainImage &&
-            hasPhone &&
-            editorHasBlocks
-          );
         }
+        function hostMatches(hostname, domains) {
+          const h = hostname.toLowerCase().replace(/^www\./, "");
+          return domains.some((d) => h === d || h.endsWith("." + d));
+        }
+        
+        // Title
+        if (!str($input.title)) fields.title = "Enter your business name.";
+        
+        // Description (Editor.js JSON): at least one block with visible text
+        let blocks = [];
+        try {
+          let ej = $input.editor_js_json;
+          if (typeof ej === "string") ej = JSON.parse(ej);
+          if (ej && Array.isArray(ej.blocks)) blocks = ej.blocks;
+        } catch (e) {
+          blocks = [];
+        }
+        const hasDescription = blocks.some((b) => {
+          const d = b && b.data ? b.data : {};
+          if (typeof d.text === "string" && str(d.text.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " "))) return true;
+          if (Array.isArray(d.items) && d.items.length > 0) return true;
+          return false;
+        });
+        if (!hasDescription) fields.editor_js_json = "Add a description of your business.";
+        
+        // Amenities (arrives as an array, or as a JSON string from multipart)
+        let amenities = $input.amenities;
+        if (typeof amenities === "string") {
+          try { amenities = JSON.parse(amenities); } catch (e) { amenities = []; }
+        }
+        if (!Array.isArray(amenities) || amenities.length === 0) fields.amenities = "Select at least one amenity.";
+        
+        // Working hours
+        if (!str($input.working_hours)) fields.working_hours = "Enter your working hours.";
+        
+        // Address: text plus the coordinates set by the Google Places pick
+        if (!str($input.address_string) || !str($input.latitude) || !str($input.longitude)) {
+          fields.address = "Select your address from the suggestions list.";
+        }
+        
+        // Cover image: a new upload, or an existing (non-blob) URL
+        const mainUrl = str($input.main_image_url);
+        const hasMainImage = !!$input.main_image || (mainUrl !== "" && !mainUrl.startsWith("blob:"));
+        if (!hasMainImage) fields.main_image = "Upload a cover image.";
+        
+        // Phone (US)
+        const phone = str($input.contact_phone);
+        if (!phone) fields.contact_phone = "Enter a phone number.";
+        else if (!phoneRegex.test(phone)) fields.contact_phone = "Enter a valid US phone number, e.g. (602) 555-0123.";
+        
+        // Email
+        const email = str($input.email).toLowerCase();
+        if (!email) fields.email = "Enter a business email address.";
+        else if (!emailRegex.test(email)) fields.email = "Enter a valid email address.";
+        
+        // Website
+        const website = str($input.website);
+        if (!website) fields.website = "Enter your website address.";
+        else if (!parseHttpUrl(website)) fields.website = "Enter a full web address starting with https://";
+        
+        // Optional social links: must be a URL on the right site when filled in
+        const socials = [
+          ["facebook_url",  $input.facebook_url,  ["facebook.com", "fb.com"],  "Facebook"],
+          ["instagram_url", $input.instagram_url, ["instagram.com"],           "Instagram"],
+          ["twitter_url",   $input.twitter_url,   ["twitter.com", "x.com"],    "X (Twitter)"],
+          ["youtube_url",   $input.youtube_url,   ["youtube.com", "youtu.be"], "YouTube"],
+          ["pinterest_url", $input.pinterest_url, null,                        "Pinterest"]
+        ];
+        for (const [key, raw, domains, label] of socials) {
+          const value = str(raw);
+          if (!value) continue;
+          const u = parseHttpUrl(value);
+          if (!u) {
+            fields[key] = `Enter a full ${label} link starting with https://`;
+            continue;
+          }
+          if (domains && !hostMatches(u.hostname, domains)) {
+            fields[key] = `This doesn't look like a ${label} link (expected ${domains.join(" or ")}).`;
+          }
+          if (!domains && !/(^|\.)pinterest\.[a-z.]+$/i.test(u.hostname.replace(/^www\./, ""))) {
+            fields[key] = `This doesn't look like a ${label} link.`;
+          }
+        }
+        
+        const count = Object.keys(fields).length;
+        if (count === 0) return null;
+        return JSON.stringify({
+          message: count === 1 ? "Please fix the highlighted field." : `Please fix the ${count} highlighted fields.`,
+          fields
+        });
         """
       timeout = 10
-    } as $pass_preconditions
+    } as $field_errors
   
-    precondition ($pass_preconditions || $user1.id == "Admin") {
+    precondition ($field_errors == null) {
       error_type = "inputerror"
-      error = """
-        Please fill out all required fields to submit your business for approval.
-        """
+      error = $field_errors
     }
   
     conditional {
@@ -223,89 +293,6 @@ query business verb=POST {
       else {
         var $status {
           value = "Requesting Approval"
-        }
-      
-        api.lambda {
-          code = """
-            let error = null;
-            
-            // --- Expresiones regulares ---
-            const emailRegex = new RegExp(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
-            
-            const phoneRegex = new RegExp(/^(\+1\s?)?(\(?[2-9][0-9]{2}\)?)[\s.-]?([2-9][0-9]{2})[\s.-]?([0-9]{4})$/);
-            
-            const urlRegex = new RegExp(/^(https?|ftp):\/\/((([a-z\d]([a-z\d-]*[a-z\d])*)\.)+[a-z]{2,}|((\d{1,3}\.){3}\d{1,3}))(\:\d+)?(\/[-a-z\d%_.~+]*)*(\?[;&a-z\d%_.~+=-]*)?(\#[-a-z\d_]*)?$/, 'i');
-            
-            // --- Campos de entrada ---
-            const email = $input.email;
-            const phone = $input.contact_phone;
-            const website = $input.website;
-            const twitter_url = $input.twitter_url;
-            const facebook_url = $input.facebook_url;
-            const linkedin_url = $input.linkedin_url;
-            const instagram_url = $input.instagram_url;
-            
-            // --- Validaciones principales ---
-            
-            // 1. Email (obligatorio)
-            if (!email || !emailRegex.test(String(email).toLowerCase())) {
-                error = "A valid email address is required.";
-            }
-            
-            // 2. Teléfono de EE.UU. (obligatorio)
-            if (!error && (!phone || !phoneRegex.test(String(phone)))) {
-                error = "A valid US phone number is required.";
-            }
-            
-            // --- Funciones auxiliares ---
-            
-            // Validar URL opcional
-            function validateOptionalUrl(value, fieldName) {
-                if (value && String(value).trim() !== '') {
-                    if (!urlRegex.test(String(value))) {
-                        error = `Please provide a valid URL for ${fieldName}.`;
-                    }
-                }
-            }
-            
-            // Validar URL de red social con dominios permitidos
-            function validateSocialUrl(value, validDomains, platformName) {
-                if (value && String(value).trim() !== '') {
-                    if (!urlRegex.test(String(value))) {
-                        error = `Please provide a valid URL for ${platformName}.`;
-                        return;
-                    }
-            
-                    try {
-                        const urlObj = new URL(value);
-                        const hostname = urlObj.hostname.replace(/^www\./, '').toLowerCase();
-            
-                        const isValidDomain = validDomains.some(domain => hostname === domain);
-                        if (!isValidDomain) {
-                            error = `The ${platformName} URL must be from ${validDomains.join(" or ")}.`;
-                        }
-                    } catch {
-                        error = `Invalid format for ${platformName} URL.`;
-                    }
-                }
-            }
-            
-            // --- Validaciones opcionales de URLs ---
-            if (!error) validateOptionalUrl(website, 'your website');
-            if (!error) validateSocialUrl(twitter_url, ['twitter.com', 'x.com'], 'Twitter');
-            if (!error) validateSocialUrl(facebook_url, ['facebook.com'], 'Facebook');
-            if (!error) validateSocialUrl(linkedin_url, ['linkedin.com'], 'LinkedIn');
-            if (!error) validateSocialUrl(instagram_url, ['instagram.com'], 'Instagram');
-            
-            // --- Resultado final ---
-            return error;
-            """
-          timeout = 10
-        } as $error
-      
-        precondition ($var.error == null) {
-          error_type = "inputerror"
-          error = $var.error
         }
       }
     }
@@ -405,23 +392,26 @@ query business verb=POST {
       }
     }
   
+    // Editor.js JSON -> HTML for body_content. Tolerates a string, a missing
+    // `blocks` array or malformed JSON (returns "" instead of failing).
     api.lambda {
       code = """
         function editorJsToHtml(editorJson) {
-          const blocks = editorJson.blocks;
+          const blocks = (editorJson && Array.isArray(editorJson.blocks)) ? editorJson.blocks : [];
           let html = '';
         
           blocks.forEach(block => {
-            const { type, data } = block;
+            const { type, data } = block || {};
+            if (!data) return;
         
             switch (type) {
               case 'header':
-                const level = Math.min(Math.max(data.level, 1), 6); // clamp between 1 and 6
-                html += `<h${level}>${data.text}</h${level}>\n`;
+                const level = Math.min(Math.max(Number(data.level) || 4, 1), 6); // clamp between 1 and 6
+                html += `<h${level}>${data.text ?? ''}</h${level}>\n`;
                 break;
         
               case 'paragraph':
-                html += `<p>${data.text}</p>\n`;
+                html += `<p>${data.text ?? ''}</p>\n`;
                 break;
         
               // Add more block types here as needed (e.g., list, image, quote, etc.)
@@ -435,11 +425,12 @@ query business verb=POST {
           return html;
         }
         
-        // Example usage:
-        const editorJson = $input.editor_js_json;
+        let editorJson = $input.editor_js_json;
+        if (typeof editorJson === "string") {
+          try { editorJson = JSON.parse(editorJson); } catch (e) { editorJson = null; }
+        }
         
-        const htmlOutput = editorJsToHtml(editorJson);
-        return htmlOutput;
+        return editorJsToHtml(editorJson);
         """
       timeout = 10
     } as $editor_js_html
